@@ -1,0 +1,85 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --font-bebas: 'Bebas Neue';
+  --font-archivo: 'Archivo Narrow';
+  --header-h: 6rem;
+}
+
+html { scroll-behavior: smooth; }
+
+body {
+  @apply bg-paper text-ink font-body antialiased;
+  font-size: 15px;
+  letter-spacing: 0.03em;
+  line-height: 1.65;
+}
+
+/* ── Display typography (condensed, uppercase, tight leading) ── */
+.h-display {
+  @apply font-display uppercase leading-[1.1];
+  letter-spacing: 0.02em;
+}
+
+/* ── Buttons ── */
+.btn {
+  @apply inline-flex items-center justify-center font-display uppercase tracking-widest2
+    text-sm h-12 px-10 min-w-[13rem] border transition-colors duration-200 select-none cursor-pointer;
+}
+.btn-dark { @apply bg-ink text-paper border-ink hover:bg-paper hover:text-ink; }
+.btn-light { @apply bg-paper text-ink border-ink hover:bg-ink hover:text-paper; }
+.btn-ghost {
+  @apply bg-transparent text-paper border-paper hover:bg-paper/10;
+}
+
+/* ── Size pill (product page top/bottom selection) ── */
+.size-pill {
+  @apply relative font-body text-sm text-ink cursor-pointer pb-2 select-none;
+}
+.size-pill::after {
+  content: '';
+  @apply absolute left-1/2 bottom-0 h-px w-4 -translate-x-1/2 bg-transparent transition-colors;
+}
+.size-pill[data-checked='true']::after { @apply bg-ink; }
+.size-pill[data-disabled='true'] { @apply text-stone/60 cursor-not-allowed line-through; }
+
+/* ── Inputs ── */
+.input {
+  @apply w-full border-b border-smoke bg-transparent px-1 py-2 text-sm outline-none
+    focus:border-ink transition-colors placeholder:text-stone;
+}
+.label { @apply block text-xs uppercase tracking-widest2 text-stone mb-1 font-display; }
+
+/* ── Reveal animation for page loads ── */
+@keyframes rise {
+  from { opacity: 0; transform: translateY(18px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.rise { animation: rise 0.7s cubic-bezier(0.22, 1, 0.36, 1) both; }
+.rise-1 { animation-delay: 0.08s; }
+.rise-2 { animation-delay: 0.18s; }
+.rise-3 { animation-delay: 0.28s; }
+
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+.fade-in { animation: fadeIn 0.35s ease both; }
+
+/* ── Cart drawer ── */
+.drawer {
+  @apply fixed top-0 right-0 z-[70] h-full w-full max-w-[26rem] bg-paper shadow-2xl
+    translate-x-full transition-transform duration-300 ease-out flex flex-col;
+}
+.drawer[data-open='true'] { @apply translate-x-0; }
+.drawer-dim {
+  @apply fixed inset-0 z-[60] bg-ink/40 opacity-0 pointer-events-none transition-opacity duration-300;
+}
+.drawer-dim[data-open='true'] { @apply opacity-100 pointer-events-auto; }
+
+/* ── Product card hover ── */
+.card-img { @apply transition-transform duration-700 ease-out; }
+.group\/card:hover .card-img { transform: scale(1.05); }
+
+/* Thin scrollbar for admin tables */
+.thin-scroll::-webkit-scrollbar { height: 6px; width: 6px; }
+.thin-scroll::-webkit-scrollbar-thumb { @apply bg-smoke rounded; }
