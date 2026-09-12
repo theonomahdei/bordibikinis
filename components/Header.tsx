@@ -121,3 +121,18 @@ export default function Header() {
               <Link
                 key={item.href}
                 href={item.href}
+                className="block px-6 py-4 font-display uppercase tracking-widest2 text-sm text-ink border-b border-smoke/60"
+                onClick={() => setMenuOpen(false)}
+              >
+                {item.label}
+              </Link>
+            ))}
+          </nav>
+        )}
+      </header>
+
+      {/* Spacer so non-home pages don't slide under the fixed header */}
+      {pathname !== '/' && <div className="h-[6.5rem]" />}
+    </>
+  );
+}
