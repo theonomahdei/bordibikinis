@@ -8,6 +8,7 @@ import { SIZES, Size } from '@/lib/types';
 import Img from '@/components/Img';
 import SizeGuideModal from '@/components/SizeGuideModal';
 import ProductCard from '@/components/ProductCard';
+import Reveal from '@/components/Reveal';
 
 export default function ProductPage() {
   const { slug } = useParams<{ slug: string }>();
@@ -212,9 +213,15 @@ export default function ProductPage() {
       {/* ── Related ── */}
       {related.length > 0 && (
         <section className="mx-auto max-w-7xl px-4 md:px-8 py-16">
-          <h2 className="h-display text-2xl mb-8">You may also like</h2>
+          <Reveal>
+            <h2 className="h-display text-2xl mb-8">You may also like</h2>
+          </Reveal>
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-x-3 gap-y-8 md:gap-x-4">
-            {related.map(p => <ProductCard key={p.id} product={p} />)}
+            {related.map((p, i) => (
+              <Reveal key={p.id} delay={(Math.min(i, 3) as 0 | 1 | 2 | 3)}>
+                <ProductCard product={p} />
+              </Reveal>
+            ))}
           </div>
         </section>
       )}

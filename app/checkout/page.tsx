@@ -10,14 +10,21 @@ const REGIONS = [
   'Northern', 'Bono', 'Upper East', 'Upper West', 'Other',
 ];
 
-// Flat placeholder rates until the admin Settings screen + Supabase land.
 const DELIVERY: Record<string, number> = { 'Greater Accra': 30 };
 const DEFAULT_DELIVERY = 60;
 
 export default function CheckoutPage() {
-  const { cart, products, cartTotal, clearCart } = useStore();
-  const [form, setForm] = useState({ name: '', phone: '', email: '', region: 'Greater Accra', address: '' });
-  const [placed, setPlaced] = useState(false);
+  const { cart, products, cartTotal, clearCart, createOrder, user } = useStore();
+  const [form, setForm] = useState({
+    name: '',
+    phone: '',
+    email: user?.email ?? '',
+    region: 'Greater Accra',
+    address: '',
+  });
+  const [placed, setPlaced] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const delivery = cart.length === 0 ? 0 : (DELIVERY[form.region] ?? DEFAULT_DELIVERY);
   const total = cartTotal + delivery;
@@ -25,15 +32,56 @@ export default function CheckoutPage() {
   const set = (k: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) =>
     setForm(f => ({ ...f, [k]: e.target.value }));
 
+  const submit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setBusy(true);
+    setError(null);
+    try {
+      const orderId = await createOrder({
+        customerName: form.name,
+        customerPhone: form.phone,
+        customerEmail: form.email,
+        region: form.region,
+        deliveryAddress: form.address,
+        subtotalGhs: cartTotal,
+        deliveryGhs: delivery,
+        totalGhs: total,
+        notes: '',
+        items: cart.map(item => {
+          const p = products.find(x => x.id === item.productId)!;
+          return {
+            productId: p.id,
+            productName: p.name,
+            productImage: p.images[0] ?? '',
+            colorName: p.colorName,
+            topSize: item.topSize,
+            bottomSize: item.bottomSize,
+            quantity: item.quantity,
+            unitPriceGhs: p.priceGhs,
+          };
+        }),
+      });
+      clearCart();
+      setPlaced(orderId);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Could not place the order. Please try again.');
+    } finally {
+      setBusy(false);
+    }
+  };
+
   if (placed) {
     return (
       <div className="mx-auto max-w-xl px-6 py-28 text-center">
-        <h1 className="h-display text-4xl">Order received</h1>
-        <p className="mt-4 text-sm text-ink/70">
-          Thank you! This is a preview flow — when Paystack is integrated, payment
-          (card &amp; mobile money) will happen right here before confirmation.
+        <h1 className="h-display text-4xl rise">Order received</h1>
+        <p className="mt-4 text-sm text-ink/70 rise rise-1">
+          Thank you — we&apos;ve got your order. Reference: <span className="font-mono text-xs">{placed.slice(0, 8)}</span>.
+          We&apos;ll message you on WhatsApp shortly to confirm payment and delivery.
         </p>
-        <Link href="/shop" className="btn btn-dark mt-10">Keep shopping</Link>
+        <p className="mt-2 text-xs text-stone rise rise-2">
+          Payment via Paystack (card + mobile money) is coming in the next phase.
+        </p>
+        <Link href="/shop" className="btn btn-dark mt-10 rise rise-3">Keep shopping</Link>
       </div>
     );
   }
@@ -49,22 +97,10 @@ export default function CheckoutPage() {
 
   return (
     <div className="mx-auto max-w-5xl px-4 md:px-8 pb-8">
-      <h1 className="h-display text-4xl py-10 text-center">Checkout</h1>
+      <h1 className="h-display text-4xl py-10 text-center rise">Checkout</h1>
 
       <div className="grid gap-12 lg:grid-cols-[1fr_24rem]">
-        {/* ── Delivery details ── */}
-        <form
-          className="space-y-6"
-          onSubmit={e => {
-            e.preventDefault();
-            // ═══ PAYSTACK INTEGRATION POINT ═══
-            // Next iteration: create order (status PENDING), call Paystack
-            // Initialize Transaction, redirect to Paystack, confirm via
-            // webhook, then decrement stock. For now we simulate success.
-            clearCart();
-            setPlaced(true);
-          }}
-        >
+        <form className="space-y-6 rise rise-1" onSubmit={submit}>
           <p className="font-display uppercase tracking-widest2 text-sm border-b border-smoke pb-3">
             Delivery details
           </p>
@@ -101,16 +137,17 @@ export default function CheckoutPage() {
             </div>
           </div>
 
-          <button type="submit" className="btn btn-dark w-full !h-14">
-            Place order — {formatGhs(total)}
+          {error && <p className="text-sm text-error">{error}</p>}
+
+          <button type="submit" className="btn btn-dark w-full !h-14" disabled={busy}>
+            {busy ? 'Placing order…' : `Place order — ${formatGhs(total)}`}
           </button>
           <p className="text-xs text-stone text-center">
             Payment by card or mobile money will be added with Paystack in the next phase.
           </p>
         </form>
 
-        {/* ── Summary ── */}
-        <aside className="h-max border border-smoke p-6 space-y-5">
+        <aside className="h-max border border-smoke p-6 space-y-5 rise rise-2">
           <p className="font-display uppercase tracking-widest2 text-sm border-b border-smoke pb-3">
             Order summary
           </p>
@@ -120,7 +157,7 @@ export default function CheckoutPage() {
             return (
               <div key={i} className="flex gap-3 text-sm">
                 <div className="w-14 shrink-0 aspect-[3/4] overflow-hidden bg-offwhite">
-                  <Img src={p.images[0]} alt={p.name} className="h-full w-full object-cover"
+                  <Img src={p.images[0] ?? ''} alt={p.name} className="h-full w-full object-cover"
                     fallbackHex={p.colorHex} fallbackLabel="" />
                 </div>
                 <div className="flex-1 min-w-0">

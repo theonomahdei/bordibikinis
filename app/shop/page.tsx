@@ -5,9 +5,10 @@ import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { useStore } from '@/lib/store';
 import ProductCard from '@/components/ProductCard';
+import Reveal from '@/components/Reveal';
 
 function ShopContent() {
-  const { products, categories } = useStore();
+  const { products, categories, loading } = useStore();
   const params = useSearchParams();
   const activeSlug = params.get('cat');
 
@@ -26,11 +27,10 @@ function ShopContent() {
           {activeCategory ? activeCategory.name : 'Shop All'}
         </h1>
         <p className="mt-2 text-sm text-ink/60 rise rise-1">
-          {visible.length} {visible.length === 1 ? 'set' : 'sets'}
+          {loading ? '…' : `${visible.length} ${visible.length === 1 ? 'set' : 'sets'}`}
         </p>
       </div>
 
-      {/* Category filter row */}
       <div className="flex flex-wrap items-center justify-center gap-x-8 gap-y-3 pb-10">
         <Link
           href="/shop"
@@ -53,7 +53,13 @@ function ShopContent() {
         ))}
       </div>
 
-      {visible.length === 0 ? (
+      {loading ? (
+        <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-x-3 gap-y-10 md:gap-x-4">
+          {[0, 1, 2, 3, 4, 5, 6, 7].map(i => (
+            <div key={i} className="aspect-[3/4] bg-offwhite pulse-fade" />
+          ))}
+        </div>
+      ) : visible.length === 0 ? (
         <div className="py-24 text-center">
           <p className="font-display uppercase tracking-widest2 text-lg text-ink/60">
             Nothing here yet
@@ -62,7 +68,11 @@ function ShopContent() {
         </div>
       ) : (
         <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-x-3 gap-y-10 md:gap-x-4">
-          {visible.map(p => <ProductCard key={p.id} product={p} />)}
+          {visible.map((p, i) => (
+            <Reveal key={p.id} delay={(Math.min(i % 4, 3) as 0 | 1 | 2 | 3)}>
+              <ProductCard product={p} />
+            </Reveal>
+          ))}
         </div>
       )}
     </div>

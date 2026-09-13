@@ -1,10 +1,4 @@
-// ── Core data types ─────────────────────────────────────────────
-// These shapes mirror the Supabase tables we'll create later
-// (products, product_variants, categories, product_categories),
-// so the migration is a data-source swap, not a rewrite.
-
 export type Size = 'XS' | 'S' | 'M' | 'L' | 'XL';
-
 export const SIZES: Size[] = ['XS', 'S', 'M', 'L', 'XL'];
 
 export interface Category {
@@ -16,8 +10,6 @@ export interface Category {
   isActive: boolean;
 }
 
-// Stock is tracked per piece (top sizes and bottom sizes independently),
-// matching the top/bottom selection flow on the product page.
 export interface Product {
   id: string;
   slug: string;
@@ -48,4 +40,41 @@ export interface CartItem {
 export interface Catalog {
   products: Product[];
   categories: Category[];
+}
+
+export type OrderStatus = 'pending' | 'confirmed' | 'shipped' | 'delivered' | 'cancelled';
+
+export interface OrderItem {
+  id?: string;
+  productId: string | null;
+  productName: string;
+  productImage: string;
+  colorName: string;
+  topSize: Size;
+  bottomSize: Size;
+  quantity: number;
+  unitPriceGhs: number;
+}
+
+export interface Order {
+  id: string;
+  userId: string | null;
+  customerName: string;
+  customerPhone: string;
+  customerEmail: string;
+  region: string;
+  deliveryAddress: string;
+  subtotalGhs: number;
+  deliveryGhs: number;
+  totalGhs: number;
+  status: OrderStatus;
+  notes: string;
+  createdAt: string;
+  items: OrderItem[];
+}
+
+export interface SessionUser {
+  id: string;
+  email: string;
+  isAdmin: boolean;
 }

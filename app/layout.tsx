@@ -5,6 +5,7 @@ import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import CartDrawer from '@/components/CartDrawer';
 import WhatsAppButton from '@/components/WhatsAppButton';
+import WelcomeModal from '@/components/WelcomeModal';
 
 export const metadata: Metadata = {
   title: 'BIKINI — Swimwear, Made in Ghana',
@@ -32,6 +33,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <main className="min-h-screen">{children}</main>
           <Footer />
           <CartDrawer />
+          <WelcomeModal />
           <WhatsAppButton />
         </StoreProvider>
       </body>
