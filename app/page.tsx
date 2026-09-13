@@ -68,7 +68,7 @@ export default function HomePage() {
         <Reveal>
           <div className="relative aspect-[4/3] md:aspect-auto md:min-h-[34rem] overflow-hidden">
             <Img
-              src="https://images.unsplash.com/photo-1519046904884-53103b34b206?q=85&w=1600&auto=format&fit=crop"
+              src="https://uxtkieoopckjqvgoiboa.supabase.co/storage/v1/object/public/products/WhatsApp%20Image%202026-09-13%20at%2012.07.57%20AM%20(1).jpeg"
               alt="Poolside afternoon"
               className="h-full w-full object-cover"
               fallbackHex="#F6DFD4"
