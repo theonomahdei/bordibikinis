@@ -11,7 +11,7 @@ import Img from '@/components/Img';
 // Split-screen background image on the login/register page.
 // Same image as the homepage hero, per the design decision.
 const AUTH_IMAGE =
-  'https://uxtkieoopckjqvgoiboa.supabase.co/storage/v1/object/public/products/hero%20sec.png';
+  'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?q=85&w=1600&auto=format&fit=crop';
 
 // The round SWIMZY brand logo shown top-left of the auth form.
 // Leave empty to render the plain "SWIMZY" wordmark instead.
@@ -24,10 +24,20 @@ function AccountContent() {
   const nextPath = params.get('next');
 
   useEffect(() => {
-    if (ready && user && nextPath) router.replace(nextPath);
+    if (!ready || !user) return;
+    // Admin users go straight to the admin dashboard — no need to see the
+    // customer profile page. Guest-to-admin still works via the /admin route.
+    if (user.isAdmin) {
+      router.replace('/admin');
+      return;
+    }
+    if (nextPath) router.replace(nextPath);
   }, [ready, user, nextPath, router]);
 
   if (!ready) return <div className="min-h-screen bg-paper" />;
+  // Admin users flash the profile screen for a split second before redirect —
+  // return null instead of ProfilePane while the redirect is in flight.
+  if (user?.isAdmin) return <div className="min-h-screen bg-paper" />;
 
   return user ? <ProfilePane /> : <AuthPane />;
 }
@@ -39,6 +49,7 @@ function AuthPane() {
   const [email, setEmail] = useState('');
   const [pass, setPass] = useState('');
   const [confirm, setConfirm] = useState('');
+  const [showPass, setShowPass] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -92,8 +103,16 @@ function AuthPane() {
             </div>
             <div>
               <label className="label" htmlFor="ap">Password</label>
-              <input id="ap" className="input" type="password" required minLength={6}
-                value={pass} onChange={e => setPass(e.target.value)} />
+              <div className="relative">
+                <input id="ap" className="input pr-16" type={showPass ? 'text' : 'password'} required minLength={6}
+                  value={pass} onChange={e => setPass(e.target.value)} />
+                <button type="button"
+                  onClick={() => setShowPass(v => !v)}
+                  className="absolute right-0 top-1/2 -translate-y-1/2 text-[11px] font-display uppercase tracking-widest2 text-stone hover:text-ink px-2"
+                  aria-label={showPass ? 'Hide password' : 'Show password'}>
+                  {showPass ? 'Hide' : 'Show'}
+                </button>
+              </div>
               {tab === 'signup' && (
                 <p className="text-xs text-stone mt-1">At least 6 characters.</p>
               )}
@@ -101,7 +120,7 @@ function AuthPane() {
             {tab === 'signup' && (
               <div>
                 <label className="label" htmlFor="ac">Confirm password</label>
-                <input id="ac" className="input" type="password" required minLength={6}
+                <input id="ac" className="input" type={showPass ? 'text' : 'password'} required minLength={6}
                   value={confirm} onChange={e => setConfirm(e.target.value)} />
               </div>
             )}

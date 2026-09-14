@@ -64,19 +64,19 @@ export default function AccountMenu({ tone = 'ink' }: { tone?: 'ink' | 'paper' }
             <p className="text-sm truncate text-ink">{user.email}</p>
           </div>
           <Link
-            href="/account"
+            href={user.isAdmin ? '/admin' : '/account'}
             onClick={() => setOpen(false)}
             className="block px-4 py-3 text-sm text-ink hover:bg-offwhite border-b border-smoke/60"
           >
-            My account &amp; orders
+            {user.isAdmin ? 'Admin dashboard' : 'My account & orders'}
           </Link>
           {user.isAdmin && (
             <Link
-              href="/admin"
+              href="/admin/#orders"
               onClick={() => setOpen(false)}
               className="block px-4 py-3 text-sm text-ink hover:bg-offwhite border-b border-smoke/60"
             >
-              Admin dashboard
+              View orders
             </Link>
           )}
           <button
