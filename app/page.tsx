@@ -7,7 +7,7 @@ import ProductCard from '@/components/ProductCard';
 import Reveal from '@/components/Reveal';
 
 const HERO_IMG =
-  'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?q=85&w=2400&auto=format&fit=crop';
+  'https://uxtkieoopckjqvgoiboa.supabase.co/storage/v1/object/public/products/hero%20sec.png';
 
 export default function HomePage() {
   const { products, categories, loading } = useStore();
@@ -74,7 +74,7 @@ export default function HomePage() {
         <Reveal>
           <div className="relative aspect-[4/3] md:aspect-auto md:min-h-[34rem] overflow-hidden">
             <Img
-              src="https://images.unsplash.com/photo-1519046904884-53103b34b206?q=85&w=1600&auto=format&fit=crop"
+              src="c:\Users\USER\Downloads\WhatsApp Image 2026-09-13 at 12.07.57 AM (1).jpeg"
               alt="Poolside afternoon"
               className="h-full w-full object-cover"
               fallbackHex="#F6DFD4"
