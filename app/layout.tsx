@@ -8,7 +8,7 @@ import WhatsAppButton from '@/components/WhatsAppButton';
 import WelcomeModal from '@/components/WelcomeModal';
 
 export const metadata: Metadata = {
-  title: 'BIKINI — Swimwear, Made in Ghana',
+  title: 'SWIMZY — Swimwear, Made in Ghana',
   description:
     'Bold colour, clean lines, signature fits. Bikinis and swimwear designed for the Ghanaian sun — delivered anywhere in Ghana.',
 };

@@ -44,7 +44,7 @@ export default function AdminPage() {
   return (
     <div className="min-h-screen bg-offwhite">
       <div className="bg-ink text-paper px-6 py-4 flex items-center justify-between">
-        <p className="font-display uppercase tracking-widest2">BIKINI · Admin</p>
+        <p className="font-display uppercase tracking-widest2">SWIMZY · Admin</p>
         <div className="flex items-center gap-5 text-sm">
           <Link href="/" className="underline underline-offset-2 hover:opacity-70">View store</Link>
           <button onClick={store.signOut} className="underline underline-offset-2 hover:opacity-70">
@@ -104,7 +104,7 @@ function Login() {
   return (
     <div className="min-h-screen bg-ink flex items-center justify-center px-6">
       <form className="w-full max-w-sm bg-paper p-10" onSubmit={submit}>
-        <p className="font-display uppercase tracking-widest2 text-center text-2xl">BIKINI</p>
+        <p className="font-display uppercase tracking-widest2 text-center text-2xl">SWIMZY</p>
         <p className="text-center text-xs text-stone mt-1 mb-8">Admin access</p>
 
         <label className="label" htmlFor="ae">Email</label>

@@ -101,6 +101,14 @@ export default function CheckoutPage() {
 
       <div className="grid gap-12 lg:grid-cols-[1fr_24rem]">
         <form className="space-y-6 rise rise-1" onSubmit={submit}>
+          {!user && (
+            <div className="bg-offwhite/70 border border-smoke px-4 py-3 flex items-center gap-3 text-sm">
+              <span className="flex-1">Have an account? Log in to save these details.</span>
+              <Link href="/account?next=/checkout" className="font-display uppercase tracking-widest2 text-xs underline underline-offset-2 hover:opacity-70">
+                Log in
+              </Link>
+            </div>
+          )}
           <p className="font-display uppercase tracking-widest2 text-sm border-b border-smoke pb-3">
             Delivery details
           </p>

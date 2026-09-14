@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 import { useStore } from '@/lib/store';
+import AccountMenu from './AccountMenu';
 
 const NAV = [
   { label: 'New Arrivals', href: '/shop?cat=new-arrivals' },
@@ -39,6 +40,9 @@ export default function Header() {
   useEffect(() => { setMenuOpen(false); }, [pathname]);
 
   if (pathname.startsWith('/admin')) return null;
+  // Also hide chrome on /account so the auth split-screen is uninterrupted.
+  // The account page has its own "Back to store" link.
+  if (pathname.startsWith('/account')) return null;
 
   const tone = overHero ? 'text-paper' : 'text-ink';
 
@@ -86,20 +90,21 @@ export default function Header() {
           {/* Center: wordmark */}
           <Link
             href="/"
-            aria-label="BIKINI — home"
+            aria-label="SWIMZY — home"
             className="justify-self-center font-display text-[2rem] leading-none tracking-[0.14em] select-none"
           >
-            Swimzy
+            SWIMZY
           </Link>
 
-          {/* Right: shop + cart */}
-          <div className="justify-self-end flex items-center gap-6">
+          {/* Right: shop + account + cart */}
+          <div className="justify-self-end flex items-center gap-5 md:gap-6">
             <Link
               href="/shop"
               className="hidden sm:block font-display uppercase tracking-widest2 text-[13px] hover:opacity-60 transition-opacity"
             >
               Shop All
             </Link>
+            <AccountMenu tone={overHero ? 'paper' : 'ink'} />
             <button
               onClick={() => setCartOpen(true)}
               className="relative flex items-center gap-2"
@@ -127,6 +132,13 @@ export default function Header() {
                 {item.label}
               </Link>
             ))}
+            <Link
+              href="/account"
+              className="block px-6 py-4 font-display uppercase tracking-widest2 text-sm text-ink border-b border-smoke/60"
+              onClick={() => setMenuOpen(false)}
+            >
+              Log in / My account
+            </Link>
           </nav>
         )}
       </header>

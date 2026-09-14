@@ -24,6 +24,7 @@ export default function Footer() {
   const [joined, setJoined] = useState(false);
 
   if (pathname.startsWith('/admin')) return null;
+  if (pathname.startsWith('/account')) return null;
 
   return (
     <footer className="border-t border-smoke bg-paper mt-24">
@@ -94,7 +95,7 @@ export default function Footer() {
       </div>
 
       <div className="border-t border-smoke py-6 text-center text-xs text-stone">
-        © {new Date().getFullYear()} BIKINI · Accra, Ghana · All prices in Ghana Cedis (GH₵)
+        © {new Date().getFullYear()} SWIMZY · Accra, Ghana · All prices in Ghana Cedis (GH₵)
       </div>
     </footer>
   );

@@ -8,10 +8,11 @@ const WHATSAPP_NUMBER = '233538144603';
 export default function WhatsAppButton() {
   const pathname = usePathname();
   if (pathname.startsWith('/admin')) return null;
+  if (pathname.startsWith('/account')) return null;
 
   return (
     <a
-      href={`https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent('Hi BIKINI! I have a question about an order.')}`}
+      href={`https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent('Hi SWIMZY! I have a question about an order.')}`}
       target="_blank"
       rel="noopener noreferrer"
       aria-label="Chat with us on WhatsApp"

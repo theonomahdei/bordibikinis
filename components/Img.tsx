@@ -17,7 +17,7 @@ interface ImgProps {
 }
 
 export default function Img({
-  src, alt, className = '', fallbackLabel = 'BIKINI', fallbackHex = '#EFE7DC', eager = false,
+  src, alt, className = '', fallbackLabel = 'SWIMZY', fallbackHex = '#EFE7DC', eager = false,
 }: ImgProps) {
   const [failed, setFailed] = useState(false);
 

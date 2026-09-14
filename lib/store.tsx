@@ -1,23 +1,15 @@
 'use client';
 
 import React, {
-  createContext, useContext, useEffect, useMemo, useState, useCallback,
+  createContext, useContext, useEffect, useMemo, useState, useCallback, useRef,
 } from 'react';
 import { supabase, ADMIN_EMAIL } from './supabase';
 import type {
   CartItem, Category, Product, Size, Order, OrderItem, OrderStatus, SessionUser,
 } from './types';
 
-// ═══════════════════════════════════════════════════════════════
-//  DATA LAYER — SUPABASE
-//  Products, categories, orders live in Supabase.
-//  Cart lives in localStorage (never left the client anyway).
-//  Auth is Supabase Auth. Admin is: authenticated + email matches.
-// ═══════════════════════════════════════════════════════════════
-
 const CART_KEY = 'bikini.cart.v1';
 
-// ── DB row shapes ──────────────────────────────────────────
 interface ProductRow {
   id: string; slug: string; name: string; color_name: string; color_hex: string;
   price_ghs: number; description: string; fabric: string; fit: string; care: string;
@@ -44,7 +36,23 @@ const categoryFromRow = (r: CategoryRow): Category => ({
   sortOrder: r.sort_order, isActive: r.is_active,
 });
 
-// ── Context shape ─────────────────────────────────────────
+// Merge two carts, deduplicating by (productId + topSize + bottomSize)
+// and summing quantities.
+function mergeCarts(a: CartItem[], b: CartItem[]): CartItem[] {
+  const map = new Map<string, CartItem>();
+  const key = (x: CartItem) => `${x.productId}|${x.topSize}|${x.bottomSize}`;
+  for (const item of [...a, ...b]) {
+    const k = key(item);
+    const existing = map.get(k);
+    if (existing) {
+      map.set(k, { ...existing, quantity: existing.quantity + item.quantity });
+    } else {
+      map.set(k, { ...item });
+    }
+  }
+  return Array.from(map.values());
+}
+
 interface StoreValue {
   ready: boolean;
   loading: boolean;
@@ -52,7 +60,6 @@ interface StoreValue {
   categories: Category[];
   refresh: () => Promise<void>;
 
-  // cart
   cart: CartItem[];
   cartOpen: boolean;
   setCartOpen: (open: boolean) => void;
@@ -63,25 +70,22 @@ interface StoreValue {
   cartTotal: number;
   cartCount: number;
 
-  // auth
   user: SessionUser | null;
   isAdmin: boolean;
   signInEmail: (email: string, pass: string) => Promise<{ error: string | null }>;
   signUpEmail: (email: string, pass: string) => Promise<{ error: string | null }>;
   signOut: () => Promise<void>;
 
-  // catalog mutations (admin)
   upsertProduct: (p: Product) => Promise<void>;
   deleteProduct: (id: string) => Promise<void>;
   upsertCategory: (c: Category) => Promise<void>;
   deleteCategory: (id: string) => Promise<void>;
 
-  // orders
   createOrder: (o: Omit<Order, 'id' | 'createdAt' | 'status' | 'userId'>) => Promise<string>;
   updateOrderStatus: (id: string, status: OrderStatus) => Promise<void>;
   fetchOrders: () => Promise<Order[]>;
+  fetchMyOrders: () => Promise<Order[]>;
 
-  // image upload
   uploadImage: (file: File) => Promise<string>;
 }
 
@@ -96,7 +100,13 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   const [ready, setReady] = useState(false);
   const [loading, setLoading] = useState(true);
 
-  // ── Load catalog from Supabase ─────────────────────────
+  // Track whether we're currently loading a user's saved cart (skip syncing
+  // during that window so we don't overwrite what we just loaded).
+  const syncingRef = useRef(false);
+  // Track the user id whose cart is currently loaded, so we don't sync
+  // a stale guest cart to a newly logged-in user before we've fetched theirs.
+  const currentCartUserRef = useRef<string | null>(null);
+
   const refresh = useCallback(async () => {
     setLoading(true);
     const [pRes, cRes] = await Promise.all([
@@ -108,48 +118,92 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     setLoading(false);
   }, []);
 
+  // ── Load a user's saved cart from Supabase and merge with local cart ──
+  const loadAndMergeUserCart = useCallback(async (userId: string, localCart: CartItem[]) => {
+    syncingRef.current = true;
+    try {
+      const { data } = await supabase.from('saved_carts')
+        .select('items').eq('user_id', userId).maybeSingle();
+      const remoteCart = (data?.items as CartItem[] | undefined) ?? [];
+      const merged = mergeCarts(localCart, remoteCart);
+      setCart(merged);
+      currentCartUserRef.current = userId;
+      // Push the merged cart back so guest additions persist server-side.
+      await supabase.from('saved_carts').upsert({
+        user_id: userId,
+        items: merged,
+        updated_at: new Date().toISOString(),
+      });
+    } finally {
+      syncingRef.current = false;
+    }
+  }, []);
+
   // ── Boot ───────────────────────────────────────────────
   useEffect(() => {
     (async () => {
-      // Cart from localStorage
+      let localCart: CartItem[] = [];
       try {
         const raw = window.localStorage.getItem(CART_KEY);
-        if (raw) setCart(JSON.parse(raw));
+        if (raw) localCart = JSON.parse(raw);
       } catch { /* ignore */ }
+      setCart(localCart);
 
-      // Existing session (if any)
       const { data: { session } } = await supabase.auth.getSession();
       if (session?.user?.email) {
-        setUser({
+        const u: SessionUser = {
           id: session.user.id,
           email: session.user.email,
           isAdmin: session.user.email === ADMIN_EMAIL,
-        });
+        };
+        setUser(u);
+        await loadAndMergeUserCart(u.id, localCart);
       }
 
-      // Listen for auth changes across tabs
-      supabase.auth.onAuthStateChange((_evt, session) => {
+      supabase.auth.onAuthStateChange(async (evt, session) => {
         if (session?.user?.email) {
-          setUser({
+          const u: SessionUser = {
             id: session.user.id,
             email: session.user.email,
             isAdmin: session.user.email === ADMIN_EMAIL,
-          });
+          };
+          setUser(u);
+          // Merge only on fresh sign-ins, not on background token refreshes
+          if (evt === 'SIGNED_IN' && currentCartUserRef.current !== u.id) {
+            const currentLocalCart = (() => {
+              try {
+                const raw = window.localStorage.getItem(CART_KEY);
+                return raw ? JSON.parse(raw) as CartItem[] : [];
+              } catch { return []; }
+            })();
+            await loadAndMergeUserCart(u.id, currentLocalCart);
+          }
         } else {
           setUser(null);
+          currentCartUserRef.current = null;
         }
       });
 
       await refresh();
       setReady(true);
     })();
-  }, [refresh]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
-  // ── Cart persistence ───────────────────────────────────
+  // ── Cart persistence: localStorage always; Supabase if logged in ──
   useEffect(() => {
     if (!ready) return;
     try { window.localStorage.setItem(CART_KEY, JSON.stringify(cart)); } catch { /* ignore */ }
-  }, [cart, ready]);
+    if (!user || syncingRef.current) return;
+    // Debounce cart writes to Supabase — otherwise every keystroke on
+    // quantity would fire a request.
+    const t = setTimeout(async () => {
+      await supabase.from('saved_carts').upsert({
+        user_id: user.id, items: cart, updated_at: new Date().toISOString(),
+      });
+    }, 400);
+    return () => clearTimeout(t);
+  }, [cart, ready, user]);
 
   const addToCart = useCallback((item: CartItem) => {
     setCart(prev => {
@@ -187,9 +241,10 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   const signOut = useCallback(async () => {
     await supabase.auth.signOut();
     setUser(null);
+    currentCartUserRef.current = null;
   }, []);
 
-  // ── Catalog mutations (admin only, enforced by RLS too) ─
+  // ── Catalog mutations (admin only, RLS enforces at DB level) ─
   const upsertProduct = useCallback(async (p: Product) => {
     const row = {
       id: p.id, slug: p.slug, name: p.name, color_name: p.colorName, color_hex: p.colorHex,
@@ -199,7 +254,6 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     };
     const { error } = await supabase.from('products').upsert(row);
     if (error) throw new Error(error.message);
-    // Rewrite category joins
     await supabase.from('product_categories').delete().eq('product_id', p.id);
     if (p.categoryIds.length) {
       await supabase.from('product_categories').insert(
@@ -271,41 +325,51 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     if (error) throw new Error(error.message);
   }, []);
 
+  const orderRowsToOrders = (data: any[]): Order[] => data.map((r): Order => ({
+    id: r.id,
+    userId: r.user_id,
+    customerName: r.customer_name,
+    customerPhone: r.customer_phone,
+    customerEmail: r.customer_email,
+    region: r.region,
+    deliveryAddress: r.delivery_address,
+    subtotalGhs: Number(r.subtotal_ghs),
+    deliveryGhs: Number(r.delivery_ghs),
+    totalGhs: Number(r.total_ghs),
+    status: r.status,
+    notes: r.notes ?? '',
+    createdAt: r.created_at,
+    items: (r.order_items ?? []).map((i: any): OrderItem => ({
+      id: i.id,
+      productId: i.product_id,
+      productName: i.product_name,
+      productImage: i.product_image,
+      colorName: i.color_name,
+      topSize: i.top_size,
+      bottomSize: i.bottom_size,
+      quantity: i.quantity,
+      unitPriceGhs: Number(i.unit_price_ghs),
+    })),
+  }));
+
   const fetchOrders = useCallback(async (): Promise<Order[]> => {
     const { data, error } = await supabase
-      .from('orders')
-      .select('*, order_items(*)')
+      .from('orders').select('*, order_items(*)')
       .order('created_at', { ascending: false });
     if (error || !data) return [];
-    return data.map((r: any): Order => ({
-      id: r.id,
-      userId: r.user_id,
-      customerName: r.customer_name,
-      customerPhone: r.customer_phone,
-      customerEmail: r.customer_email,
-      region: r.region,
-      deliveryAddress: r.delivery_address,
-      subtotalGhs: Number(r.subtotal_ghs),
-      deliveryGhs: Number(r.delivery_ghs),
-      totalGhs: Number(r.total_ghs),
-      status: r.status,
-      notes: r.notes ?? '',
-      createdAt: r.created_at,
-      items: (r.order_items ?? []).map((i: any): OrderItem => ({
-        id: i.id,
-        productId: i.product_id,
-        productName: i.product_name,
-        productImage: i.product_image,
-        colorName: i.color_name,
-        topSize: i.top_size,
-        bottomSize: i.bottom_size,
-        quantity: i.quantity,
-        unitPriceGhs: Number(i.unit_price_ghs),
-      })),
-    }));
+    return orderRowsToOrders(data);
   }, []);
 
-  // ── Image upload ───────────────────────────────────────
+  const fetchMyOrders = useCallback(async (): Promise<Order[]> => {
+    if (!user) return [];
+    const { data, error } = await supabase
+      .from('orders').select('*, order_items(*)')
+      .eq('user_id', user.id)
+      .order('created_at', { ascending: false });
+    if (error || !data) return [];
+    return orderRowsToOrders(data);
+  }, [user]);
+
   const uploadImage = useCallback(async (file: File): Promise<string> => {
     const ext = file.name.split('.').pop() ?? 'jpg';
     const path = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
@@ -331,7 +395,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     user, isAdmin: user?.isAdmin ?? false,
     signInEmail, signUpEmail, signOut,
     upsertProduct, deleteProduct, upsertCategory, deleteCategory,
-    createOrder, updateOrderStatus, fetchOrders,
+    createOrder, updateOrderStatus, fetchOrders, fetchMyOrders,
     uploadImage,
   };
 
