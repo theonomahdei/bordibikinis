@@ -7,7 +7,7 @@ import ProductCard from '@/components/ProductCard';
 import Reveal from '@/components/Reveal';
 
 const HERO_IMG =
-  'https://uxtkieoopckjqvgoiboa.supabase.co/storage/v1/object/public/products/WhatsApp%20Image%202026-09-13%20at%2012.07.57%20AM.jpeg';
+  'https://uxtkieoopckjqvgoiboa.supabase.co/storage/v1/object/public/products/hero%20sec.png';
 
 export default function HomePage() {
   const { products, categories, loading } = useStore();
