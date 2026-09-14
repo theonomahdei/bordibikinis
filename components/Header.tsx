@@ -89,7 +89,7 @@ export default function Header() {
             aria-label="BIKINI — home"
             className="justify-self-center font-display text-[2rem] leading-none tracking-[0.14em] select-none"
           >
-            BIKINI
+            Swimzy
           </Link>
 
           {/* Right: shop + cart */}
