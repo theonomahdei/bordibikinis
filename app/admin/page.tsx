@@ -161,6 +161,7 @@ function OrdersList() {
   const visible = filter === 'all' ? orders : orders.filter(o => o.status === filter);
   const badge = (s: OrderStatus) => {
     const map: Record<OrderStatus, string> = {
+      pending_payment: 'bg-blush/60 text-ink border border-ink/20',
       pending: 'bg-blush text-ink',
       confirmed: 'bg-sand text-ink',
       shipped: 'bg-smoke text-ink',
@@ -170,11 +171,19 @@ function OrdersList() {
     return map[s];
   };
 
+  const payBadge = (o: { paymentMethod: string; paymentStatus: string }) => {
+    if (o.paymentMethod === 'cash_on_delivery') return { label: 'COD', tone: 'bg-offwhite text-stone' };
+    if (o.paymentStatus === 'paid') return { label: 'Paid', tone: 'bg-ink text-paper' };
+    if (o.paymentStatus === 'pending') return { label: 'Awaiting payment', tone: 'bg-blush/60 text-ink' };
+    if (o.paymentStatus === 'failed') return { label: 'Payment failed', tone: 'bg-error/20 text-error' };
+    return { label: o.paymentStatus, tone: 'bg-smoke text-ink' };
+  };
+
   return (
     <div>
       <div className="flex flex-wrap items-center gap-4 mb-6">
         <div className="flex gap-2">
-          {(['all', 'pending', 'confirmed', 'shipped', 'delivered', 'cancelled'] as const).map(s => (
+          {(['all', 'pending_payment', 'pending', 'confirmed', 'shipped', 'delivered', 'cancelled'] as const).map(s => (
             <button
               key={s}
               onClick={() => setFilter(s)}
@@ -212,8 +221,13 @@ function OrdersList() {
                   </p>
                 </div>
                 <span className={`px-2 py-1 text-[10px] font-display uppercase tracking-widest2 ${badge(order.status)}`}>
-                  {order.status}
+                  {order.status.replace('_', ' ')}
                 </span>
+                {(() => { const pb = payBadge(order); return (
+                  <span className={`hidden md:inline-block px-2 py-1 text-[10px] font-display uppercase tracking-widest2 ${pb.tone}`}>
+                    {pb.label}
+                  </span>
+                ); })()}
                 <span className="font-display text-sm w-24 text-right">
                   {formatGhs(order.totalGhs)}
                 </span>
@@ -261,6 +275,28 @@ function OrdersList() {
                       </div>
                     </div>
 
+                    <div className="border-t border-smoke pt-3">
+                      <p className="font-display uppercase tracking-widest2 text-xs text-stone mb-1">Payment</p>
+                      <p className="text-sm capitalize">
+                        {order.paymentMethod.replace('_', ' ')}
+                      </p>
+                      {order.paymentMethod === 'paystack' && (
+                        <>
+                          <p className="text-xs text-ink/70">
+                            Status: <span className="capitalize">{order.paymentStatus.replace('_', ' ')}</span>
+                          </p>
+                          {order.paystackReference && (
+                            <p className="text-xs text-stone font-mono truncate">Ref: {order.paystackReference}</p>
+                          )}
+                          {order.paidAt && (
+                            <p className="text-xs text-stone">
+                              Paid at {new Date(order.paidAt).toLocaleString('en-GH')}
+                            </p>
+                          )}
+                        </>
+                      )}
+                    </div>
+
                     <div>
                       <p className="font-display uppercase tracking-widest2 text-xs text-stone mb-1">Update status</p>
                       <select
@@ -272,7 +308,7 @@ function OrdersList() {
                           setOrders(prev => prev.map(o => o.id === order.id ? { ...o, status: next } : o));
                         }}
                       >
-                        {(['pending', 'confirmed', 'shipped', 'delivered', 'cancelled'] as const).map(s => (
+                        {(['pending_payment', 'pending', 'confirmed', 'shipped', 'delivered', 'cancelled'] as const).map(s => (
                           <option key={s} value={s}>{s}</option>
                         ))}
                       </select>

@@ -81,7 +81,9 @@ interface StoreValue {
   upsertCategory: (c: Category) => Promise<void>;
   deleteCategory: (id: string) => Promise<void>;
 
-  createOrder: (o: Omit<Order, 'id' | 'createdAt' | 'status' | 'userId'>) => Promise<string>;
+  createOrder: (o: Omit<Order, 'id' | 'createdAt' | 'status' | 'userId' | 'paymentStatus' | 'paystackReference' | 'paidAt'>) => Promise<string>;
+  setOrderPaystackRef: (orderId: string, reference: string) => Promise<void>;
+  cancelPendingOrder: (orderId: string) => Promise<void>;
   updateOrderStatus: (id: string, status: OrderStatus) => Promise<void>;
   fetchOrders: () => Promise<Order[]>;
   fetchMyOrders: () => Promise<Order[]>;
@@ -287,8 +289,9 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
 
   // ── Orders ─────────────────────────────────────────────
   const createOrder = useCallback(async (
-    o: Omit<Order, 'id' | 'createdAt' | 'status' | 'userId'>
+    o: Omit<Order, 'id' | 'createdAt' | 'status' | 'userId' | 'paymentStatus' | 'paystackReference' | 'paidAt'>
   ) => {
+    const isPaystack = o.paymentMethod === 'paystack';
     const { data: orderData, error } = await supabase.from('orders').insert({
       user_id: user?.id ?? null,
       customer_name: o.customerName,
@@ -300,6 +303,9 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       delivery_ghs: o.deliveryGhs,
       total_ghs: o.totalGhs,
       notes: o.notes ?? '',
+      payment_method: o.paymentMethod,
+      payment_status: isPaystack ? 'pending' : 'not_required',
+      status: isPaystack ? 'pending_payment' : 'pending',
     }).select('id').single();
     if (error || !orderData) throw new Error(error?.message ?? 'Order failed');
 
@@ -320,6 +326,22 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     return orderData.id as string;
   }, [user]);
 
+  // Attach a paystack reference to an order so the webhook can find it later.
+  const setOrderPaystackRef = useCallback(async (orderId: string, reference: string) => {
+    const { error } = await supabase.from('orders')
+      .update({ paystack_reference: reference })
+      .eq('id', orderId);
+    if (error) throw new Error(error.message);
+  }, []);
+
+  // Cancel a pending_payment order (customer closed the popup, etc).
+  const cancelPendingOrder = useCallback(async (orderId: string) => {
+    await supabase.from('orders')
+      .update({ status: 'cancelled', payment_status: 'failed' })
+      .eq('id', orderId)
+      .eq('status', 'pending_payment');
+  }, []);
+
   const updateOrderStatus = useCallback(async (id: string, status: OrderStatus) => {
     const { error } = await supabase.from('orders').update({ status }).eq('id', id);
     if (error) throw new Error(error.message);
@@ -339,6 +361,10 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     status: r.status,
     notes: r.notes ?? '',
     createdAt: r.created_at,
+    paymentMethod: r.payment_method ?? 'cash_on_delivery',
+    paymentStatus: r.payment_status ?? 'not_required',
+    paystackReference: r.paystack_reference ?? null,
+    paidAt: r.paid_at ?? null,
     items: (r.order_items ?? []).map((i: any): OrderItem => ({
       id: i.id,
       productId: i.product_id,
@@ -395,7 +421,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     user, isAdmin: user?.isAdmin ?? false,
     signInEmail, signUpEmail, signOut,
     upsertProduct, deleteProduct, upsertCategory, deleteCategory,
-    createOrder, updateOrderStatus, fetchOrders, fetchMyOrders,
+    createOrder, setOrderPaystackRef, cancelPendingOrder, updateOrderStatus, fetchOrders, fetchMyOrders,
     uploadImage,
   };
 

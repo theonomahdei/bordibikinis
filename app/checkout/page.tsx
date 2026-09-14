@@ -1,28 +1,37 @@
 'use client';
 
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { useStore, formatGhs } from '@/lib/store';
 import Img from '@/components/Img';
+import { openPaystack } from '@/lib/paystack';
 
 const REGIONS = [
   'Greater Accra', 'Ashanti', 'Central', 'Eastern', 'Western', 'Volta',
   'Northern', 'Bono', 'Upper East', 'Upper West', 'Other',
 ];
-
 const DELIVERY: Record<string, number> = { 'Greater Accra': 30 };
 const DEFAULT_DELIVERY = 60;
 
+const PAYSTACK_PUBLIC_KEY = process.env.NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY ?? '';
+
+type PayMethod = 'paystack' | 'cash_on_delivery';
+
 export default function CheckoutPage() {
-  const { cart, products, cartTotal, clearCart, createOrder, user } = useStore();
+  const router = useRouter();
+  const {
+    cart, products, cartTotal, clearCart, createOrder,
+    setOrderPaystackRef, cancelPendingOrder, user,
+  } = useStore();
+
   const [form, setForm] = useState({
-    name: '',
-    phone: '',
+    name: '', phone: '',
     email: user?.email ?? '',
     region: 'Greater Accra',
     address: '',
   });
-  const [placed, setPlaced] = useState<string | null>(null);
+  const [payMethod, setPayMethod] = useState<PayMethod>('paystack');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -32,11 +41,32 @@ export default function CheckoutPage() {
   const set = (k: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) =>
     setForm(f => ({ ...f, [k]: e.target.value }));
 
+  const buildOrderItems = () => cart.map(item => {
+    const p = products.find(x => x.id === item.productId)!;
+    return {
+      productId: p.id,
+      productName: p.name,
+      productImage: p.images[0] ?? '',
+      colorName: p.colorName,
+      topSize: item.topSize,
+      bottomSize: item.bottomSize,
+      quantity: item.quantity,
+      unitPriceGhs: p.priceGhs,
+    };
+  });
+
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setBusy(true);
     setError(null);
+
+    if (payMethod === 'paystack' && !PAYSTACK_PUBLIC_KEY) {
+      setError('Paystack is not configured yet. Please choose Cash on Delivery, or contact us on WhatsApp.');
+      return;
+    }
+
+    setBusy(true);
     try {
+      const items = buildOrderItems();
       const orderId = await createOrder({
         customerName: form.name,
         customerPhone: form.phone,
@@ -47,44 +77,44 @@ export default function CheckoutPage() {
         deliveryGhs: delivery,
         totalGhs: total,
         notes: '',
-        items: cart.map(item => {
-          const p = products.find(x => x.id === item.productId)!;
-          return {
-            productId: p.id,
-            productName: p.name,
-            productImage: p.images[0] ?? '',
-            colorName: p.colorName,
-            topSize: item.topSize,
-            bottomSize: item.bottomSize,
-            quantity: item.quantity,
-            unitPriceGhs: p.priceGhs,
-          };
-        }),
+        paymentMethod: payMethod,
+        items,
       });
-      clearCart();
-      setPlaced(orderId);
+
+      if (payMethod === 'cash_on_delivery') {
+        clearCart();
+        router.replace(`/checkout/success?order=${orderId}&method=cod`);
+        return;
+      }
+
+      // Paystack flow
+      const reference = `swimzy_${orderId.replace(/-/g, '').slice(0, 20)}_${Date.now().toString(36)}`;
+      await setOrderPaystackRef(orderId, reference);
+
+      await openPaystack({
+        publicKey: PAYSTACK_PUBLIC_KEY,
+        email: form.email,
+        amountGhs: total,
+        reference,
+        metadata: { order_id: orderId, customer_name: form.name },
+        onSuccess: async (ref) => {
+          // Payment confirmed on Paystack's side. Server-side verify + webhook
+          // handle stock and paid status. Just take them to the success page.
+          clearCart();
+          router.replace(`/checkout/success?order=${orderId}&ref=${ref}`);
+        },
+        onCancel: async () => {
+          // Customer closed the popup without paying.
+          await cancelPendingOrder(orderId);
+          setBusy(false);
+          setError('Payment was cancelled. Your cart is still saved.');
+        },
+      });
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Could not place the order. Please try again.');
-    } finally {
       setBusy(false);
     }
   };
-
-  if (placed) {
-    return (
-      <div className="mx-auto max-w-xl px-6 py-28 text-center">
-        <h1 className="h-display text-4xl rise">Order received</h1>
-        <p className="mt-4 text-sm text-ink/70 rise rise-1">
-          Thank you — we&apos;ve got your order. Reference: <span className="font-mono text-xs">{placed.slice(0, 8)}</span>.
-          We&apos;ll message you on WhatsApp shortly to confirm payment and delivery.
-        </p>
-        <p className="mt-2 text-xs text-stone rise rise-2">
-          Payment via Paystack (card + mobile money) is coming in the next phase.
-        </p>
-        <Link href="/shop" className="btn btn-dark mt-10 rise rise-3">Keep shopping</Link>
-      </div>
-    );
-  }
 
   if (cart.length === 0) {
     return (
@@ -109,6 +139,7 @@ export default function CheckoutPage() {
               </Link>
             </div>
           )}
+
           <p className="font-display uppercase tracking-widest2 text-sm border-b border-smoke pb-3">
             Delivery details
           </p>
@@ -145,13 +176,54 @@ export default function CheckoutPage() {
             </div>
           </div>
 
+          {/* ── Payment method ─────────────────────────────── */}
+          <div>
+            <p className="font-display uppercase tracking-widest2 text-sm border-b border-smoke pb-3 mb-4">
+              Payment method
+            </p>
+
+            <div className="space-y-3">
+              <label className={`flex items-start gap-3 p-4 border cursor-pointer transition-colors ${
+                payMethod === 'paystack' ? 'border-ink bg-offwhite/50' : 'border-smoke hover:border-ink/60'
+              }`}>
+                <input type="radio" name="pay" value="paystack" checked={payMethod === 'paystack'}
+                  onChange={() => setPayMethod('paystack')} className="mt-1" />
+                <div className="flex-1">
+                  <p className="font-display uppercase tracking-widest2 text-sm">Pay now — Card or Mobile Money</p>
+                  <p className="text-xs text-stone mt-1">
+                    Secure payment via Paystack. Supports MTN MoMo, Vodafone Cash, AirtelTigo Money,
+                    and Visa / Mastercard.
+                  </p>
+                </div>
+              </label>
+
+              <label className={`flex items-start gap-3 p-4 border cursor-pointer transition-colors ${
+                payMethod === 'cash_on_delivery' ? 'border-ink bg-offwhite/50' : 'border-smoke hover:border-ink/60'
+              }`}>
+                <input type="radio" name="pay" value="cash_on_delivery" checked={payMethod === 'cash_on_delivery'}
+                  onChange={() => setPayMethod('cash_on_delivery')} className="mt-1" />
+                <div className="flex-1">
+                  <p className="font-display uppercase tracking-widest2 text-sm">Cash on delivery / Pay via WhatsApp</p>
+                  <p className="text-xs text-stone mt-1">
+                    We&apos;ll message you on WhatsApp to arrange payment. Available for Accra and select regions.
+                  </p>
+                </div>
+              </label>
+            </div>
+          </div>
+
           {error && <p className="text-sm text-error">{error}</p>}
 
           <button type="submit" className="btn btn-dark w-full !h-14" disabled={busy}>
-            {busy ? 'Placing order…' : `Place order — ${formatGhs(total)}`}
+            {busy
+              ? (payMethod === 'paystack' ? 'Opening secure payment…' : 'Placing order…')
+              : (payMethod === 'paystack' ? `Pay ${formatGhs(total)}` : `Place order — ${formatGhs(total)}`)}
           </button>
+
           <p className="text-xs text-stone text-center">
-            Payment by card or mobile money will be added with Paystack in the next phase.
+            {payMethod === 'paystack'
+              ? 'Payment is processed securely by Paystack. Your card and MoMo details never touch our servers.'
+              : 'By placing this order, you agree we\u2019ll reach out on WhatsApp to arrange payment and delivery.'}
           </p>
         </form>
 

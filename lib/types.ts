@@ -42,7 +42,9 @@ export interface Catalog {
   categories: Category[];
 }
 
-export type OrderStatus = 'pending' | 'confirmed' | 'shipped' | 'delivered' | 'cancelled';
+export type OrderStatus = 'pending_payment' | 'pending' | 'confirmed' | 'shipped' | 'delivered' | 'cancelled';
+export type PaymentMethod = 'paystack' | 'cash_on_delivery';
+export type PaymentStatus = 'not_required' | 'pending' | 'paid' | 'failed' | 'refunded';
 
 export interface OrderItem {
   id?: string;
@@ -71,6 +73,10 @@ export interface Order {
   notes: string;
   createdAt: string;
   items: OrderItem[];
+  paymentMethod: PaymentMethod;
+  paymentStatus: PaymentStatus;
+  paystackReference: string | null;
+  paidAt: string | null;
 }
 
 export interface SessionUser {

@@ -11,7 +11,7 @@ import Img from '@/components/Img';
 // Split-screen background image on the login/register page.
 // Same image as the homepage hero, per the design decision.
 const AUTH_IMAGE =
-  'https://uxtkieoopckjqvgoiboa.supabase.co/storage/v1/object/public/products/download%20(4).jpg';
+  'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?q=85&w=1600&auto=format&fit=crop';
 
 // The round SWIMZY brand logo shown top-left of the auth form.
 // Leave empty to render the plain "SWIMZY" wordmark instead.
@@ -189,6 +189,7 @@ function ProfilePane() {
 
   const badge = (s: OrderStatus) => {
     const map: Record<OrderStatus, string> = {
+      pending_payment: 'bg-blush/60 text-ink',
       pending: 'bg-blush text-ink',
       confirmed: 'bg-sand text-ink',
       shipped: 'bg-smoke text-ink',
