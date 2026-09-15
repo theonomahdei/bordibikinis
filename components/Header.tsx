@@ -99,9 +99,14 @@ export default function Header() {
           <Link
             href="/"
             aria-label="SWIMZY — home"
-            className="justify-self-center font-display text-[2rem] leading-none tracking-[0.14em] select-none"
+            className="justify-self-center flex items-center h-10 select-none"
           >
-            SWIMZY
+            <img
+              src="https://uxtkieoopckjqvgoiboa.supabase.co/storage/v1/object/public/products/swimzy%20backgroundless.png"
+              alt="SWIMZY"
+              className="h-full w-auto object-contain"
+              style={{ filter: overHero ? 'brightness(0) invert(1)' : 'none' }}
+            />
           </Link>
 
           {/* Right: shop + account + cart */}
@@ -154,7 +159,11 @@ export default function Header() {
             ${menuOpen ? 'translate-x-0' : '-translate-x-full'}`}
         >
           <div className="flex items-center justify-between px-6 h-16 border-b border-smoke">
-            <p className="font-display text-lg tracking-[0.14em]">SWIMZY</p>
+            <img
+              src="https://uxtkieoopckjqvgoiboa.supabase.co/storage/v1/object/public/products/swimzy%20backgroundless.png"
+              alt="SWIMZY"
+              className="h-8 w-auto object-contain"
+            />
             <button
               onClick={() => setMenuOpen(false)}
               aria-label="Close menu"
