@@ -213,7 +213,7 @@ export default function Header() {
 
           <div className="absolute inset-x-0 bottom-0 px-6 py-5 border-t border-smoke bg-paper">
             <p className="text-[11px] uppercase tracking-widest2 font-display text-stone">Support</p>
-            
+            <a
               href="https://wa.me/233538144603"
               className="text-sm text-ink mt-1 block hover:opacity-70 transition-opacity"
               onClick={() => setMenuOpen(false)}
