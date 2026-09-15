@@ -39,6 +39,14 @@ export default function Header() {
 
   useEffect(() => { setMenuOpen(false); }, [pathname]);
 
+  // Lock body scroll while the mobile drawer is open, so the underlying
+  // page doesn't slide behind it. Restore original overflow on close.
+  useEffect(() => {
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = menuOpen ? 'hidden' : prev;
+    return () => { document.body.style.overflow = prev; };
+  }, [menuOpen]);
+
   if (pathname.startsWith('/admin')) return null;
   // Also hide chrome on /account so the auth split-screen is uninterrupted.
   // The account page has its own "Back to store" link.
@@ -119,29 +127,102 @@ export default function Header() {
           </div>
         </div>
 
-        {/* Mobile nav */}
-        {menuOpen && (
-          <nav className="lg:hidden bg-paper border-t border-smoke fade-in">
+      </header>
+
+      {/* ── Mobile menu drawer (LV-style) ──
+          Slides in from the left. Backdrop dims + blurs the page.
+          Body scroll is locked while open. Timing tuned for a smooth,
+          confident feel ~900ms with a soft cubic-bezier ease. */}
+      <div
+        className={`fixed inset-0 z-[65] transition-all duration-700 ease-[cubic-bezier(0.32,0.72,0,1)] ${
+          menuOpen ? 'pointer-events-auto' : 'pointer-events-none'
+        }`}
+        aria-hidden={!menuOpen}
+      >
+        {/* Backdrop */}
+        <div
+          onClick={() => setMenuOpen(false)}
+          className={`absolute inset-0 bg-ink/45 backdrop-blur-sm transition-opacity duration-700 ${
+            menuOpen ? 'opacity-100' : 'opacity-0'
+          }`}
+        />
+
+        {/* Drawer panel */}
+        <nav
+          className={`absolute inset-y-0 left-0 w-[85%] max-w-[22rem] bg-paper shadow-2xl
+            transform transition-transform duration-[900ms] ease-[cubic-bezier(0.32,0.72,0,1)]
+            ${menuOpen ? 'translate-x-0' : '-translate-x-full'}`}
+        >
+          <div className="flex items-center justify-between px-6 h-16 border-b border-smoke">
+            <p className="font-display text-lg tracking-[0.14em]">SWIMZY</p>
+            <button
+              onClick={() => setMenuOpen(false)}
+              aria-label="Close menu"
+              className="p-1 -mr-1"
+            >
+              <svg width="16" height="16" viewBox="0 0 14 14">
+                <path d="M1 1l12 12M13 1L1 13" stroke="currentColor" strokeWidth="1.2" />
+              </svg>
+            </button>
+          </div>
+
+          <div className="px-2 py-4">
             {NAV.concat({ label: 'Shop All', href: '/shop' }).map(item => (
               <Link
                 key={item.href}
                 href={item.href}
-                className="block px-6 py-4 font-display uppercase tracking-widest2 text-sm text-ink border-b border-smoke/60"
                 onClick={() => setMenuOpen(false)}
+                className="group/link relative block px-4 py-4 font-display uppercase tracking-widest2 text-[15px] text-ink overflow-hidden"
               >
-                {item.label}
+                <span className="relative inline-block">
+                  {item.label}
+                  {/* Underline sweeps in from the left on hover/focus */}
+                  <span className="absolute -bottom-0.5 left-0 h-px w-full bg-ink
+                    origin-left scale-x-0 group-hover/link:scale-x-100
+                    transition-transform duration-500 ease-[cubic-bezier(0.32,0.72,0,1)]" />
+                </span>
+                {/* Arrow slides in from the right on hover */}
+                <span className="absolute right-4 top-1/2 -translate-y-1/2 opacity-0 -translate-x-2
+                  group-hover/link:opacity-100 group-hover/link:translate-x-0
+                  transition-all duration-500 ease-[cubic-bezier(0.32,0.72,0,1)]">
+                  →
+                </span>
               </Link>
             ))}
+          </div>
+
+          <div className="border-t border-smoke mx-2 mt-2 pt-4 px-2">
             <Link
               href="/account"
-              className="block px-6 py-4 font-display uppercase tracking-widest2 text-sm text-ink border-b border-smoke/60"
+              onClick={() => setMenuOpen(false)}
+              className="group/link relative block px-4 py-4 font-display uppercase tracking-widest2 text-[15px] text-ink overflow-hidden"
+            >
+              <span className="relative inline-block">
+                Log in / My account
+                <span className="absolute -bottom-0.5 left-0 h-px w-full bg-ink
+                  origin-left scale-x-0 group-hover/link:scale-x-100
+                  transition-transform duration-500 ease-[cubic-bezier(0.32,0.72,0,1)]" />
+              </span>
+              <span className="absolute right-4 top-1/2 -translate-y-1/2 opacity-0 -translate-x-2
+                group-hover/link:opacity-100 group-hover/link:translate-x-0
+                transition-all duration-500 ease-[cubic-bezier(0.32,0.72,0,1)]">
+                →
+              </span>
+            </Link>
+          </div>
+
+          <div className="absolute inset-x-0 bottom-0 px-6 py-5 border-t border-smoke bg-paper">
+            <p className="text-[11px] uppercase tracking-widest2 font-display text-stone">Support</p>
+            
+              href="https://wa.me/233538144603"
+              className="text-sm text-ink mt-1 block hover:opacity-70 transition-opacity"
               onClick={() => setMenuOpen(false)}
             >
-              Log in / My account
-            </Link>
-          </nav>
-        )}
-      </header>
+              WhatsApp — 053 814 4603
+            </a>
+          </div>
+        </nav>
+      </div>
 
       {/* Spacer so non-home pages don't slide under the fixed header */}
       {pathname !== '/' && <div className="h-[6.5rem]" />}
