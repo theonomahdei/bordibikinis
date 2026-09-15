@@ -3,7 +3,7 @@
 import { usePathname } from 'next/navigation';
 
 // Support number — change here when the business number changes.
-const WHATSAPP_NUMBER = '233538144603';
+const WHATSAPP_NUMBER = '233209948631';
 
 export default function WhatsAppButton() {
   const pathname = usePathname();

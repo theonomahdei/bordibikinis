@@ -70,7 +70,7 @@ export default function Header() {
           Free delivery in Accra on orders over GH₵ 500 · Nationwide delivery across Ghana
         </div>
 
-        <div className={`grid grid-cols-3 items-center px-4 md:px-10 h-16 ${tone}`}>
+        <div className={`grid grid-cols-3 items-center px-4 md:px-10 h-20 ${tone}`}>
           {/* Left: nav (desktop) / burger (mobile) */}
           <div className="flex items-center gap-7">
             <button
@@ -99,7 +99,7 @@ export default function Header() {
           <Link
             href="/"
             aria-label="SWIMZY — home"
-            className="justify-self-center flex items-center h-10 select-none"
+            className="justify-self-center flex items-center h-14 select-none"
           >
             <img
               src="https://uxtkieoopckjqvgoiboa.supabase.co/storage/v1/object/public/products/swimzy%20backgroundless.png"
@@ -223,18 +223,18 @@ export default function Header() {
           <div className="absolute inset-x-0 bottom-0 px-6 py-5 border-t border-smoke bg-paper">
             <p className="text-[11px] uppercase tracking-widest2 font-display text-stone">Support</p>
             <a
-              href="https://wa.me/233538144603"
+              href="https://wa.me/233209948631"
               className="text-sm text-ink mt-1 block hover:opacity-70 transition-opacity"
               onClick={() => setMenuOpen(false)}
             >
-              WhatsApp — 053 814 4603
+              WhatsApp — 020 994 8631
             </a>
           </div>
         </nav>
       </div>
 
       {/* Spacer so non-home pages don't slide under the fixed header */}
-      {pathname !== '/' && <div className="h-[6.5rem]" />}
+      {pathname !== '/' && <div className="h-[7.25rem]" />}
     </>
   );
 }
