@@ -59,6 +59,11 @@ export default function CheckoutPage() {
     e.preventDefault();
     setError(null);
 
+    if (!user) {
+      setError('Please log in to complete your order.');
+      return;
+    }
+
     if (payMethod === 'paystack' && !PAYSTACK_PUBLIC_KEY) {
       setError('Paystack is not configured yet. Please choose Cash on Delivery, or contact us on WhatsApp.');
       return;
@@ -132,10 +137,17 @@ export default function CheckoutPage() {
       <div className="grid gap-12 lg:grid-cols-[1fr_24rem]">
         <form className="space-y-6 rise rise-1" onSubmit={submit}>
           {!user && (
-            <div className="bg-offwhite/70 border border-smoke px-4 py-3 flex items-center gap-3 text-sm">
-              <span className="flex-1">Have an account? Log in to save these details.</span>
-              <Link href="/account?next=/checkout" className="font-display uppercase tracking-widest2 text-xs underline underline-offset-2 hover:opacity-70">
-                Log in
+            <div className="bg-ink text-paper px-5 py-4 space-y-2">
+              <p className="font-display uppercase tracking-widest2 text-sm">Log in to check out</p>
+              <p className="text-xs opacity-80 leading-relaxed">
+                We ask everyone to sign in before checkout so we can save your details,
+                keep your orders in one place, and follow up if anything comes up. It only takes a minute.
+              </p>
+              <Link
+                href="/account?next=/checkout"
+                className="inline-block mt-2 bg-paper text-ink font-display uppercase tracking-widest2 text-xs px-5 py-2 hover:opacity-80 transition-opacity"
+              >
+                Log in or create account
               </Link>
             </div>
           )}
@@ -214,14 +226,25 @@ export default function CheckoutPage() {
 
           {error && <p className="text-sm text-error">{error}</p>}
 
-          <button type="submit" className="btn btn-dark w-full !h-14" disabled={busy}>
-            {busy
-              ? (payMethod === 'paystack' ? 'Opening secure payment…' : 'Placing order…')
-              : (payMethod === 'paystack' ? `Pay ${formatGhs(total)}` : `Place order — ${formatGhs(total)}`)}
-          </button>
+          {user ? (
+            <button type="submit" className="btn btn-dark w-full !h-14" disabled={busy}>
+              {busy
+                ? (payMethod === 'paystack' ? 'Opening secure payment…' : 'Placing order…')
+                : (payMethod === 'paystack' ? `Pay ${formatGhs(total)}` : `Place order — ${formatGhs(total)}`)}
+            </button>
+          ) : (
+            <Link
+              href="/account?next=/checkout"
+              className="btn btn-dark w-full !h-14"
+            >
+              Log in to continue
+            </Link>
+          )}
 
           <p className="text-xs text-stone text-center">
-            {payMethod === 'paystack'
+            {!user
+              ? 'Your cart is saved. You\u2019ll come right back here after logging in.'
+              : payMethod === 'paystack'
               ? 'Payment is processed securely by Paystack. Your card and MoMo details never touch our servers.'
               : 'By placing this order, you agree we\u2019ll reach out on WhatsApp to arrange payment and delivery.'}
           </p>
