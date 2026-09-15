@@ -15,7 +15,7 @@ const AUTH_IMAGE =
 
 // The round SWIMZY brand logo shown top-left of the auth form.
 // Leave empty to render the plain "SWIMZY" wordmark instead.
-const BRAND_LOGO = '';
+const BRAND_LOGO = 'https://uxtkieoopckjqvgoiboa.supabase.co/storage/v1/object/public/products/swimzy%20backgroundless.png';
 
 function AccountContent() {
   const { user, ready } = useStore();
@@ -72,10 +72,10 @@ function AuthPane() {
     <div className="min-h-screen grid lg:grid-cols-2 bg-paper">
       <div className="flex items-start justify-center px-6 md:px-16 py-16 lg:py-24">
         <div className="w-full max-w-md">
-          <div className="mb-16">
+          <div className="mb-14 -ml-3 md:-ml-4">
             {BRAND_LOGO ? (
-              <Img src={BRAND_LOGO} alt="Swimzy" className="h-24 w-24 object-contain"
-                fallbackHex="#EFE7DC" fallbackLabel="SWIMZY" />
+              <img src={BRAND_LOGO} alt="SWIMZY"
+                className="h-auto w-[15rem] md:w-[18rem] object-contain" />
             ) : (
               <p className="font-display text-4xl tracking-[0.18em] leading-none">SWIMZY</p>
             )}

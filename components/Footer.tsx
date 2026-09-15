@@ -5,7 +5,7 @@ import { usePathname } from 'next/navigation';
 import { useState } from 'react';
 
 const CARE = [
-  { label: 'Contact Us', href: 'https://wa.me/233209948631' },
+  { label: 'Contact Us', href: 'https://wa.me/233538144603' },
   { label: 'Delivery', href: '/shop' },
   { label: 'Size Guide', href: '/shop' },
   { label: 'Returns', href: '/shop' },
@@ -61,8 +61,8 @@ export default function Footer() {
             <li><a className="hover:text-ink transition-colors" href="#">Instagram</a></li>
             <li><a className="hover:text-ink transition-colors" href="#">TikTok</a></li>
             <li>
-              <a className="hover:text-ink transition-colors" href="https://wa.me/233209948631">
-                WhatsApp — 020 994 8631
+              <a className="hover:text-ink transition-colors" href="https://wa.me/233538144603">
+                WhatsApp — 053 814 4603
               </a>
             </li>
           </ul>

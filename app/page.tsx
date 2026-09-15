@@ -7,7 +7,11 @@ import ProductCard from '@/components/ProductCard';
 import Reveal from '@/components/Reveal';
 
 const HERO_IMG =
-  'https://uxtkieoopckjqvgoiboa.supabase.co/storage/v1/object/public/products/hero%20sec.png';
+  'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?q=85&w=2400&auto=format&fit=crop';
+
+// SWIMZY brand mark — replace with your uploaded logo URL when it changes.
+const BRAND_LOGO =
+  'https://uxtkieoopckjqvgoiboa.supabase.co/storage/v1/object/public/products/swimzy%20backgroundless.png';
 
 export default function HomePage() {
   const { products, categories, loading } = useStore();
@@ -26,6 +30,18 @@ export default function HomePage() {
           eager
         />
         <div className="absolute inset-0 bg-gradient-to-t from-ink/45 via-transparent to-ink/20" />
+
+        {/* Brand logo — high-center on the hero, inverted to white via CSS filter
+            so the black artwork reads clearly on the darkened photo. Sized so it
+            never overflows the section on any screen. */}
+        <div className="absolute inset-x-0 top-[10vh] flex justify-center px-6 pointer-events-none rise">
+          <img
+            src={BRAND_LOGO}
+            alt="SWIMZY"
+            className="h-auto w-[min(70vw,32rem)] max-h-[38vh] object-contain"
+            style={{ filter: 'brightness(0) invert(1)' }}
+          />
+        </div>
 
         <div className="absolute inset-x-0 bottom-[12vh] flex flex-col items-center gap-5 text-paper px-6">
           <h1 className="h-display text-4xl md:text-5xl rise">Best Sellers</h1>
@@ -68,7 +84,7 @@ export default function HomePage() {
         <Reveal>
           <div className="relative aspect-[4/3] md:aspect-auto md:min-h-[34rem] overflow-hidden">
             <Img
-              src="https://uxtkieoopckjqvgoiboa.supabase.co/storage/v1/object/public/products/WhatsApp%20Image%202026-09-13%20at%2012.07.57%20AM%20(1).jpeg"
+              src="https://images.unsplash.com/photo-1519046904884-53103b34b206?q=85&w=1600&auto=format&fit=crop"
               alt="Poolside afternoon"
               className="h-full w-full object-cover"
               fallbackHex="#F6DFD4"
